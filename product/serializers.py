@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from decimal import Decimal
 from .models import Category, Product, Review
-
+from django.conf import settings
+from django.contrib.auth import get_user_model
 '''
 
 class CategorySerializer(serializers.Serializer):
@@ -66,11 +67,27 @@ class ProductSerializer(serializers.ModelSerializer):
 
     def calculate_tax(self, product):
         return round(product.price * Decimal(1.1), 2)
+
+class SimpleUserSerializer(serializers.ModelSerializer):
+    name= serializers.SerializerMethodField(method_name='get_current_user_name')
+    class Meta:
+        model= get_user_model()
+        fields= ['id', 'name']
     
+    def get_current_user_name(self, obj):
+        return obj.get_full_name()
+
 class ReviewSerializer(serializers.ModelSerializer):
+    # user= SimpleUserSerializer()
+    user= serializers.SerializerMethodField(method_name='get_user')
     class Meta:
         model= Review
-        fields= ['id', 'name', 'description']
+        fields= ['id', 'user', 'product', 'ratings', 'comment']
+        read_only_fields= ['user', 'product']
+
+    def get_user(self, obj):
+        return SimpleUserSerializer(obj.user).data
+    
 
     def create(self, validated_data):
         product_id= self.context['product_id']

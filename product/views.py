@@ -7,12 +7,15 @@ from rest_framework.mixins import CreateModelMixin, ListModelMixin
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny, DjangoModelPermissions, DjangoModelPermissionsOrAnonReadOnly
 from .models import Product, Category, Review
 from .filters import ProductFilters
+from .permissions import IsReviewAuthorOrReadOnly
 from .paginations import DefaultPagination
 from .serializers import ProductSerializer, CategorySerializer, ReviewSerializer
 from django.db.models import Count
 from django_filters.rest_framework import DjangoFilterBackend
+from api.permissions import IsAdminOrReadOnly, FullDjangoModelPermissions
 
 '''
 @api_view(['GET', 'POST'])
@@ -201,6 +204,13 @@ class ProductViewSet(ModelViewSet):
     search_fields= ['name', 'description']
     ordering_fields= ['price', 'stock']
     pagination_class= DefaultPagination
+    permission_classes= [IsAdminOrReadOnly]
+    # permission_classes= [FullDjangoModelPermissions]
+    # permission_classes= [DjangoModelPermissionsOrAnonReadOnly]
+    # def get_permissions(self):
+    #     if self.request.method == 'GET':
+    #         return [AllowAny()]
+    #     return [IsAdminUser()]
     
     def destroy(self, request, *args, **kwargs):
         product= self.get_object()
@@ -214,14 +224,20 @@ class ProductViewSet(ModelViewSet):
 class CategoryViewSet(ModelViewSet):
     queryset= Category.objects.annotate(product_count= Count('products')).all()
     serializer_class= CategorySerializer
+    permission_classes= [IsAdminOrReadOnly]
 
 class ReviewViewSet(ModelViewSet):
     # queryset= Review.objects.all()
     serializer_class= ReviewSerializer
+    permission_classes= [IsReviewAuthorOrReadOnly]
 
     def get_queryset(self):
         return Review.objects.filter(product_id= self.kwargs['product_pk'])
-    
+    def perform_create(self, serializer):
+        serializer.save(user= self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(user= self.request.user)
 
     def get_serializer_context(self):
         return {'product_id': self.kwargs['product_pk']}
