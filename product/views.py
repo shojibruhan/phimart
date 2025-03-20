@@ -8,11 +8,11 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny, DjangoModelPermissions, DjangoModelPermissionsOrAnonReadOnly
-from .models import Product, Category, Review
+from .models import Product, Category, Review, ProductImage
 from .filters import ProductFilters
 from .permissions import IsReviewAuthorOrReadOnly
 from .paginations import DefaultPagination
-from .serializers import ProductSerializer, CategorySerializer, ReviewSerializer
+from .serializers import ProductSerializer, CategorySerializer, ReviewSerializer, ProductImageSerializer
 from django.db.models import Count
 from django_filters.rest_framework import DjangoFilterBackend
 from api.permissions import IsAdminOrReadOnly, FullDjangoModelPermissions
@@ -219,6 +219,22 @@ class ProductViewSet(ModelViewSet):
             return Response(messeges)
         self.perform_destroy(product)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+
+class ProductImageViewSet(ModelViewSet):
+    serializer_class= ProductImageSerializer
+    permission_classes= [IsAdminOrReadOnly]
+
+    def get_queryset(self):
+        return ProductImage.objects.filter(product_id= self.kwargs.get('product_pk'))
+    
+    def perform_create(self, serializer):
+        serializer.save(product_id= self.kwargs.get('product_pk'))
+
+
+
+
 
 
 class CategoryViewSet(ModelViewSet):

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from decimal import Decimal
-from .models import Category, Product, Review
+from .models import Category, Product, Review, ProductImage
 from django.conf import settings
 from django.contrib.auth import get_user_model
 '''
@@ -42,11 +42,17 @@ class CategorySerializer(serializers.ModelSerializer):
     #     count= Product.objects.filter(category= category).count()
     #     return count
 
+class ProductImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model= ProductImage
+        fields= ['id', 'image']
+
 
 class ProductSerializer(serializers.ModelSerializer):
+    images= ProductImageSerializer(many= True)
     class Meta:
         model= Product
-        fields= ['id', 'name', 'description', 'price', 'stock', 'category', 'price_with_tax']
+        fields= ['id', 'name', 'description', 'price', 'stock', 'category', 'price_with_tax', 'images']
 
     # category= serializers.PrimaryKeyRelatedField(
     #     queryset= Category.objects.all()
@@ -67,6 +73,10 @@ class ProductSerializer(serializers.ModelSerializer):
 
     def calculate_tax(self, product):
         return round(product.price * Decimal(1.1), 2)
+
+
+
+
 
 class SimpleUserSerializer(serializers.ModelSerializer):
     name= serializers.SerializerMethodField(method_name='get_current_user_name')
