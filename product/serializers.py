@@ -34,7 +34,7 @@ class CategorySerializer(serializers.ModelSerializer):
         model= Category
         fields= ['id', 'name', 'description', 'product_count']
 
-    product_count= serializers.IntegerField(read_only= True)
+    product_count= serializers.IntegerField(read_only= True, help_text= "Return total product in each category.")
 
     # product_count= serializers.SerializerMethodField(method_name='calculate_count')
     

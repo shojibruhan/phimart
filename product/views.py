@@ -16,6 +16,7 @@ from .serializers import ProductSerializer, CategorySerializer, ReviewSerializer
 from django.db.models import Count
 from django_filters.rest_framework import DjangoFilterBackend
 from api.permissions import IsAdminOrReadOnly, FullDjangoModelPermissions
+from drf_yasg.utils import swagger_auto_schema
 
 '''
 @api_view(['GET', 'POST'])
@@ -196,6 +197,13 @@ class CategoryDetails(RetrieveUpdateDestroyAPIView):
 '''
 
 class ProductViewSet(ModelViewSet):
+    """
+    API endpoints for managing product and store.
+    - Allows authenticated admin to create, update and delete product.
+    - Allows User to browse and filter product.
+    - Support searching by name, categories and description
+    - Support ordering by price and update it
+    """
     queryset= Product.objects.all()
     serializer_class= ProductSerializer
     filter_backends= [DjangoFilterBackend, SearchFilter, OrderingFilter]
@@ -212,6 +220,9 @@ class ProductViewSet(ModelViewSet):
     #         return [AllowAny()]
     #     return [IsAdminUser()]
     
+    @swagger_auto_schema(
+            operation_summary="delete operation by admin"
+    )
     def destroy(self, request, *args, **kwargs):
         product= self.get_object()
         if product.stock > 10:
@@ -248,7 +259,7 @@ class ReviewViewSet(ModelViewSet):
     permission_classes= [IsReviewAuthorOrReadOnly]
 
     def get_queryset(self):
-        return Review.objects.filter(product_id= self.kwargs['product_pk'])
+        return Review.objects.filter(product_id= self.kwargs.get('product_pk'))
     def perform_create(self, serializer):
         serializer.save(user= self.request.user)
 
@@ -256,4 +267,4 @@ class ReviewViewSet(ModelViewSet):
         serializer.save(user= self.request.user)
 
     def get_serializer_context(self):
-        return {'product_id': self.kwargs['product_pk']}
+        return {'product_id': self.kwargs.get('product_pk')}
