@@ -230,6 +230,8 @@ class ProductViewSet(ModelViewSet):
             return Response(messeges)
         self.perform_destroy(product)
         return Response(status=status.HTTP_204_NO_CONTENT)
+    def get_queryset(self):
+        return Product.objects.prefetch_related('images').all()
 
 
 
