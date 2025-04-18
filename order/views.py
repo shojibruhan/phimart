@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import ValidationError  # Import this
 from rest_framework.decorators import action
 from rest_framework.response import Response
-
+from rest_framework import status
 
 class CartViewSet(CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
     # queryset= Cart.objects.all()
@@ -26,6 +26,16 @@ class CartViewSet(CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, Gener
         if getattr(self, 'swagger_fake_view', False):
             return Cart.objects.none
         return Cart.objects.prefetch_related('items__product').filter(user= self.request.user)
+    
+    def create(self, request, *args, **kwargs):
+        existing_cart= Cart.objects.filter(user= request.user).first()
+
+        if existing_cart:
+            serializer= self.get_serializer(existing_cart)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        return super().create(request, *args, **kwargs)
+
 '''
 
 class CartViewSet(CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
