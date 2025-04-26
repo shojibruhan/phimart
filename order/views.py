@@ -1,4 +1,5 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect, HttpResponseRedirect
+from django.conf import settings as main_settings
 from order import serializers as SZ
 from .serializers import CartSerializer, CartItemSerializer, AddCartItemSerializer, UpdateCartItemSerializer, OrderSerializer, CreateOrderSerializer
 from .models import Cart, CartItem, Order, OrderItem
@@ -134,9 +135,9 @@ def initiate_payment(request):
     post_body['total_amount'] = amount
     post_body['currency'] = "BDT"
     post_body['tran_id'] = f"trxn_{order_id}"
-    post_body['success_url'] = "http://localhost:5173/dashboard/payment/success/"
-    post_body['fail_url'] = "http://localhost:5173/dashboard/payment/success/"
-    post_body['cancel_url'] = "http://localhost:5173/dashboard/orders/"
+    post_body['success_url'] = f"{main_settings.BACKEND_URL}/api/v1/payment/success/"
+    post_body['fail_url'] = f"{main_settings.BACKEND_URL}/api/v1/payment/fail/"
+    post_body['cancel_url'] = f"{main_settings.BACKEND_URL}/api/v1/payment/cancel/"
     post_body['emi_option'] = 0
     post_body['cus_name'] = f"{user.first_name} {user.last_name}"
     post_body['cus_email'] = user.email
@@ -158,3 +159,21 @@ def initiate_payment(request):
     if response.get("status") == 'SUCCESS':
         return Response({"payment_url": response["GatewayPageURL"]})
     return Response({"error": "Payment initiation failed"}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def payment_success(request):
+    order_id=request.data.get("tran_id").split('_')[1]
+    order=Order.objects.get(id= order_id)
+    order.status= "Ready To Ship"
+    order.save()
+
+    return HttpResponseRedirect(f"{main_settings.FRONTEND_URL}/dashboard/orders")
+
+@api_view(['POST'])
+def payment_cancel(request):
+    return HttpResponseRedirect(f"{main_settings.FRONTEND_URL}/dashboard/orders")
+
+
+@api_view(['POST'])
+def payment_fail(request):
+    return HttpResponseRedirect(f"{main_settings.FRONTEND_URL}/dashboard/orders")
