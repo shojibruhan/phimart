@@ -5,6 +5,7 @@ from .serializers import CartSerializer, CartItemSerializer, AddCartItemSerializ
 from .models import Cart, CartItem, Order, OrderItem
 from .services import OrderService
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
+from rest_framework.views import APIView
 from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin, DestroyModelMixin
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import ValidationError  # Import this
@@ -177,3 +178,13 @@ def payment_cancel(request):
 @api_view(['POST'])
 def payment_fail(request):
     return HttpResponseRedirect(f"{main_settings.FRONTEND_URL}/dashboard/orders")
+
+
+class HasOrderedProduct(APIView):
+    permission_classes= [IsAuthenticated]
+
+    def get(self, request, product_id):
+        user= request.user
+        has_ordered= OrderItem.objects.filter(order__user= user, product_id= product_id).exists()
+
+        return Response({"hasOrdered": has_ordered})
